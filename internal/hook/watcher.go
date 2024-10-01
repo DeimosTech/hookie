@@ -44,7 +44,7 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 
 	_log := slog.Default()
 	cfg := &packages.Config{
-		Mode: packages.NeedDeps,
+		Mode: packages.NeedTypes | packages.NeedDeps,
 	}
 
 	// Load only Go directories
@@ -64,6 +64,7 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 		for _, file := range pkg.Syntax {
 			// Inspect the AST
 			for _, decl := range file.Decls {
+				fmt.Println(":::::---> ", decl)
 				if genDecl, ok := decl.(*ast.GenDecl); ok && genDecl.Tok == token.TYPE {
 					for _, spec := range genDecl.Specs {
 						typeSpec := spec.(*ast.TypeSpec)
