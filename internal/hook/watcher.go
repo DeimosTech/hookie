@@ -43,7 +43,7 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 
 	_log := slog.Default()
 	cfg := &packages.Config{
-		Mode: packages.NeedTypes,
+		Mode: packages.NeedTypes | packages.NeedTypesInfo,
 	}
 
 	// Load only Go directories
@@ -51,6 +51,7 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(_packages)
 
 	registry := NewTypeRegistry() // Create a new type registry
 
