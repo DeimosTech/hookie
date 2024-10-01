@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	db2 "github.com/DeimosTech/hookie/db"
+	"github.com/DeimosTech/hookie/internal/hook"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	db2 "inject/internal/db"
-	"inject/internal/hook"
 	"log/slog"
 )
 
