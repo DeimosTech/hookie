@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 type TypeRegistry struct {
@@ -51,12 +52,14 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 	if err != nil {
 		panic(err)
 	}
+	// Filter out unwanted packages
+	filteredPkgs := excludeInternalAndVendor(_packages)
 	fmt.Println(_packages)
 
 	registry := NewTypeRegistry() // Create a new type registry
 
 	// Iterate over all loaded packages
-	for _, pkg := range _packages {
+	for _, pkg := range filteredPkgs {
 		fmt.Println(pkg)
 		for _, file := range pkg.Syntax {
 			// Inspect the AST
@@ -163,4 +166,16 @@ func getGoPackages(root string) ([]string, error) {
 	})
 
 	return goDirs, err
+}
+
+func excludeInternalAndVendor(pkgs []*packages.Package) []*packages.Package {
+	var filtered []*packages.Package
+	for _, pkg := range pkgs {
+		if !strings.Contains(pkg.PkgPath, "cmd/internal/") &&
+			!strings.Contains(pkg.PkgPath, "cmd/vendor/") &&
+			!strings.Contains(pkg.PkgPath, "golang.org/x/arch/") {
+			filtered = append(filtered, pkg)
+		}
+	}
+	return filtered
 }
