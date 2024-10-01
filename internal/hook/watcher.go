@@ -43,7 +43,7 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 
 	_log := slog.Default()
 	cfg := &packages.Config{
-		Mode: packages.NeedTypes | packages.NeedTypesInfo,
+		Mode: packages.NeedDeps,
 	}
 
 	// Load only Go directories
