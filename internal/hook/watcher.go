@@ -20,7 +20,7 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 		Mode: packages.LoadSyntax,
 	}
 
-	_packages, err := packages.Load(cfg, ".")
+	_packages, err := packages.Load(cfg, "./...")
 	if err != nil {
 		return err
 	}
