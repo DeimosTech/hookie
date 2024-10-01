@@ -1,4 +1,4 @@
-package main
+package hookie
 
 import (
 	_ "github.com/DeimosTech/hookie/internal/hook"
