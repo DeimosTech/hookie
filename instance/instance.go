@@ -8,3 +8,9 @@ type Hook interface {
 
 type Inject struct {
 }
+
+type Test struct {
+	*Inject
+	Id   string
+	Name string
+}
