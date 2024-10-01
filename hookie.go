@@ -1,4 +1,4 @@
-package main
+package hookie
 
 import (
 	_ "github.com/DeimosTech/hookie/internal/hook"
@@ -9,4 +9,4 @@ func init() {
 	slog.Default().Info("hookiee in action")
 }
 
-func main() {}
+//func main() {}
