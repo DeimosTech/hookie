@@ -57,6 +57,7 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 
 	// Iterate over all loaded packages
 	for _, pkg := range _packages {
+		fmt.Println(pkg)
 		for _, file := range pkg.Syntax {
 			// Inspect the AST
 			for _, decl := range file.Decls {
