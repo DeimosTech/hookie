@@ -1,8 +1,9 @@
 package hook
 
 import (
+	"context"
 	"fmt"
-	"log/slog"
+	"github.com/DeimosTech/hookie/instance"
 	"reflect"
 	"sync"
 )
@@ -10,39 +11,22 @@ import (
 // Registry for audit-log-enabled models
 var auditLogModels sync.Map
 
-// Hook interface for custom hooks
-type Hook interface {
-	BeforeInsert()
-	AfterInsert()
-}
-
-type Inject struct {
-}
-
 // Step 2: Automatic detection of models that embed BaseModel or have in.In fields
 func init() {
-	logger := slog.Default()
-
-	// Example models that would be registered
-	var models []interface{}
-
-	for _, model := range models {
-		// Register models that embed BaseModel or in.In
-		if HasBaseModelOrInField(model) {
-			RegisterModel(model)
-			logger.Info("Registered model for audit logging: %T\n", model)
-		}
+	err := WatchAndInjectHooks(".", context.Background())
+	if err != nil {
+		panic(err)
 	}
 }
 
-// HasBaseModelOrInField Function to check if a model contains BaseModel or an audit marker (like hook.Inject)
-func HasBaseModelOrInField(model interface{}) bool {
+// IsHookieEnabled Function to check if a model contains BaseModel or an audit marker (like hook.Inject)
+func IsHookieEnabled(model interface{}) bool {
 	typ := reflect.TypeOf(model).Elem() // We assume it's a pointer
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
 
 		// Check if the field is of type BaseModel or in.In
-		if field.Type == reflect.TypeOf(Inject{}) {
+		if field.Type == reflect.TypeOf(instance.Inject{}) {
 			return true
 		}
 	}
@@ -58,7 +42,7 @@ func RegisterModel(model interface{}) {
 func DefaultBeforeInsert(model interface{}) {
 	// Trigger BeforeInsert hook if defined by user, else run default
 	if hasBeforeInsertHook(model) {
-		model.(Hook).BeforeInsert()
+		model.(instance.Hook).BeforeInsert()
 	}
 	if isAuditLogEnabled(model) {
 		saveAuditLog(model)
@@ -67,7 +51,7 @@ func DefaultBeforeInsert(model interface{}) {
 
 func DefaultAfterInsert(model interface{}) {
 	if hasAfterInsertHook(model) {
-		model.(Hook).AfterInsert()
+		model.(instance.Hook).AfterInsert()
 	}
 	fmt.Println("Default AfterInsert hook called")
 }
