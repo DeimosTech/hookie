@@ -13,12 +13,12 @@ import (
 	"log/slog"
 )
 
-// Mongo holds necessary fields and mongo database session to connect
+// Mongo holds necessary fields and mongo Database session to connect
 type Mongo struct {
 	*mongo.Client
-	database *mongo.Database
-	name     string
-	logger   *slog.Logger
+	Database     *mongo.Database
+	DatabaseName string
+	Logger       *slog.Logger
 }
 
 func (d *Mongo) Ping(ctx context.Context) error {
@@ -31,7 +31,7 @@ func (d *Mongo) Disconnect(ctx context.Context) error {
 
 // EnsureIndices creates indices for collection col
 func (d *Mongo) EnsureIndices(ctx context.Context, col string, index []db2.Index) error {
-	_db := d.database
+	_db := d.Database
 	var indexModels []mongo.IndexModel
 	for _, ind := range index {
 		keys := bson.D{}
@@ -65,7 +65,7 @@ func (d *Mongo) EnsureIndices(ctx context.Context, col string, index []db2.Index
 
 // DropIndices drops indices from collection col
 func (d *Mongo) DropIndices(ctx context.Context, col string, index []db2.Index) error {
-	if _, err := d.database.Collection(col).Indexes().DropAll(ctx); err != nil {
+	if _, err := d.Database.Collection(col).Indexes().DropAll(ctx); err != nil {
 		return err
 	}
 	return nil
@@ -74,7 +74,7 @@ func (d *Mongo) DropIndices(ctx context.Context, col string, index []db2.Index) 
 // Insert inserts doc into collection
 func (d *Mongo) Insert(ctx context.Context, col string, doc interface{}) error {
 	hook.DefaultBeforeInsert(doc)
-	if _, err := d.database.Collection(col).InsertOne(ctx, doc); err != nil {
+	if _, err := d.Database.Collection(col).InsertOne(ctx, doc); err != nil {
 
 		return err
 	}
@@ -83,7 +83,7 @@ func (d *Mongo) Insert(ctx context.Context, col string, doc interface{}) error {
 }
 
 func (d *Mongo) InsertMany(ctx context.Context, col string, docs []interface{}) error {
-	if _, err := d.database.Collection(col).InsertMany(ctx, docs); err != nil {
+	if _, err := d.Database.Collection(col).InsertMany(ctx, docs); err != nil {
 		return err
 	}
 	return nil
@@ -96,7 +96,7 @@ func (d *Mongo) FindOne(ctx context.Context, col string, q interface{}, v interf
 		findOneOpts = findOneOpts.SetSort(sort[0])
 	}
 
-	err := d.database.Collection(col).FindOne(ctx, q, findOneOpts).Decode(v)
+	err := d.Database.Collection(col).FindOne(ctx, q, findOneOpts).Decode(v)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return db2.ErrNotFound
@@ -112,7 +112,7 @@ func (d *Mongo) List(ctx context.Context, col string, filter interface{}, skip, 
 	if len(sort) > 0 {
 		findOpts = findOpts.SetSort(sort[0])
 	}
-	cursor, err := d.database.Collection(col).Find(ctx, filter, findOpts)
+	cursor, err := d.Database.Collection(col).Find(ctx, filter, findOpts)
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func (d *Mongo) List(ctx context.Context, col string, filter interface{}, skip, 
 
 // Aggregate runs aggregation q on docs and store the result on v
 func (d *Mongo) Aggregate(ctx context.Context, col string, q []interface{}, v interface{}) error {
-	cursor, err := d.database.Collection(col).Aggregate(ctx, q)
+	cursor, err := d.Database.Collection(col).Aggregate(ctx, q)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (d *Mongo) Aggregate(ctx context.Context, col string, q []interface{}, v in
 
 func (d *Mongo) AggregateWithDiskUse(ctx context.Context, col string, q []interface{}, v interface{}) error {
 	opt := options.Aggregate().SetAllowDiskUse(true)
-	cursor, err := d.database.Collection(col).Aggregate(ctx, q, opt)
+	cursor, err := d.Database.Collection(col).Aggregate(ctx, q, opt)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (d *Mongo) AggregateWithDiskUse(ctx context.Context, col string, q []interf
 }
 
 func (d *Mongo) Distinct(ctx context.Context, col, field string, q interface{}, v interface{}) error {
-	interfaces, err := d.database.Collection(col).Distinct(ctx, field, q)
+	interfaces, err := d.Database.Collection(col).Distinct(ctx, field, q)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func (d *Mongo) Distinct(ctx context.Context, col, field string, q interface{}, 
 }
 
 func (d *Mongo) PartialUpdateMany(ctx context.Context, col string, filter interface{}, data interface{}) error {
-	_, err := d.database.Collection(col).UpdateMany(ctx, filter, bson.M{"$set": data})
+	_, err := d.Database.Collection(col).UpdateMany(ctx, filter, bson.M{"$set": data})
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func (d *Mongo) PartialUpdateMany(ctx context.Context, col string, filter interf
 }
 
 func (d *Mongo) PartialUpdateManyByQuery(ctx context.Context, col string, filter interface{}, query db2.UnorderedDbQuery) error {
-	_, err := d.database.Collection(col).UpdateMany(ctx, filter, query)
+	_, err := d.Database.Collection(col).UpdateMany(ctx, filter, query)
 	if err != nil {
 		return err
 	}
@@ -176,17 +176,17 @@ func (d *Mongo) PartialUpdateManyByQuery(ctx context.Context, col string, filter
 }
 
 func (d *Mongo) BulkUpdate(ctx context.Context, col string, models []mongo.WriteModel) error {
-	_, err := d.database.Collection(col).BulkWrite(ctx, models)
+	_, err := d.Database.Collection(col).BulkWrite(ctx, models)
 	return err
 }
 
 func (d *Mongo) DeleteMany(ctx context.Context, col string, filter interface{}) error {
-	_, err := d.database.Collection(col).DeleteMany(ctx, filter)
+	_, err := d.Database.Collection(col).DeleteMany(ctx, filter)
 	return err
 }
 
 func (d *Mongo) Count(ctx context.Context, col string, q interface{}) (int64, error) {
-	cnt, err := d.database.Collection(col).CountDocuments(ctx, q)
+	cnt, err := d.Database.Collection(col).CountDocuments(ctx, q)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return 0, db2.ErrNotFound
@@ -200,6 +200,6 @@ func (d *Mongo) Update(ctx context.Context, col string, filter interface{}, data
 	update := bson.M{
 		"$set": data,
 	}
-	_, err := d.database.Collection(col).UpdateOne(ctx, filter, update)
+	_, err := d.Database.Collection(col).UpdateOne(ctx, filter, update)
 	return err
 }
