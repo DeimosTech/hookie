@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"go/types"
 	"golang.org/x/tools/go/packages"
+	"log"
 	"log/slog"
 	"reflect"
 )
