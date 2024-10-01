@@ -8,7 +8,3 @@ import (
 func init() {
 	slog.Default().Info("hookiee in action")
 }
-
-func main() {
-
-}
