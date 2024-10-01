@@ -7,8 +7,10 @@ import (
 	"go/token"
 	"go/types"
 	"golang.org/x/tools/go/packages"
+	"io/fs"
 	"log"
 	"log/slog"
+	"path/filepath"
 	"reflect"
 )
 
@@ -34,35 +36,39 @@ func (tr *TypeRegistry) Lookup(pkgPath, typeName string) (reflect.Type, bool) {
 // WatchAndInjectHooks finds structs with hookie.Inject and calls their hooks
 func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 	// Load all packages from the specified directory and its subdirectories
-	log := slog.Default()
-	cfg := &packages.Config{
-		Dir:  rootDir,
-		Mode: packages.LoadSyntax,
+	goDirs, err := getGoPackages(rootDir)
+	if err != nil {
+		panic(err)
 	}
 
-	// Load all packages recursively
-	pkgs, err := packages.Load(cfg, "./...")
+	_log := slog.Default()
+	cfg := &packages.Config{
+		Mode: packages.NeedTypes | packages.NeedDeps,
+	}
+
+	// Load only Go directories
+	_packages, err := packages.Load(cfg, goDirs...)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	registry := NewTypeRegistry() // Create a new type registry
 
 	// Iterate over all loaded packages
-	for _, pkg := range pkgs {
+	for _, pkg := range _packages {
 		for _, file := range pkg.Syntax {
 			// Inspect the AST
 			for _, decl := range file.Decls {
 				if genDecl, ok := decl.(*ast.GenDecl); ok && genDecl.Tok == token.TYPE {
 					for _, spec := range genDecl.Specs {
 						typeSpec := spec.(*ast.TypeSpec)
-						//fmt.Println("----> ", typeSpec.Name.Name)
+						fmt.Println("----> ", typeSpec.Name.Name)
 						if structType, ok := typeSpec.Type.(*ast.StructType); ok {
 							fmt.Println("-xx--> ", structType)
 							// Check for hookie.Inject tag
 							if isInjectable(structType) {
 								structName := typeSpec.Name.Name
-								log.Info("Found injectable struct: %s in package: %s\n", structName, pkg.PkgPath)
+								_log.Info("Found injectable struct: %s in package: %s\n", structName, pkg.PkgPath)
 
 								// Get the full type from the types package
 								obj := pkg.Types.Scope().Lookup(structName)
@@ -123,4 +129,36 @@ func isInjectable(structType *ast.StructType) bool {
 		}
 	}
 	return false
+}
+
+func getGoPackages(root string) ([]string, error) {
+	var goDirs []string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Check if the directory contains Go files
+		if d.IsDir() {
+			hasGoFile := false
+			err := filepath.WalkDir(path, func(subPath string, subD fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
+				if filepath.Ext(subPath) == ".go" {
+					hasGoFile = true
+					return filepath.SkipDir // We found a Go file, no need to continue
+				}
+				return nil
+			})
+
+			if err == nil && hasGoFile {
+				goDirs = append(goDirs, path)
+			}
+		}
+
+		return nil
+	})
+
+	return goDirs, err
 }
