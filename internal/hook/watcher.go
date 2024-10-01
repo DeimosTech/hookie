@@ -8,7 +8,6 @@ import (
 	"go/types"
 	"golang.org/x/tools/go/packages"
 	"io/fs"
-	"log"
 	"log/slog"
 	"path/filepath"
 	"reflect"
@@ -37,38 +36,34 @@ func (tr *TypeRegistry) Lookup(pkgPath, typeName string) (reflect.Type, bool) {
 // WatchAndInjectHooks finds structs with hookie.Inject and calls their hooks
 func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 	// Load all packages from the specified directory and its subdirectories
-	goDirs, err := getGoPackages("internal/")
-	if err != nil {
-		panic(err)
-	}
 
 	_log := slog.Default()
 	cfg := &packages.Config{
-		Mode: packages.NeedDeps | packages.NeedSyntax,
+		Mode: packages.NeedTypes | packages.NeedDeps | packages.NeedSyntax,
 	}
 
 	// Load only Go directories
-	_packages, err := packages.Load(cfg, goDirs...)
+	_packages, err := packages.Load(cfg, "./...")
 	if err != nil {
 		panic(err)
 	}
 	// Filter out unwanted packages
 	filteredPkgs := excludeInternalAndVendor(_packages)
-	fmt.Println(_packages)
+	//fmt.Println(_packages)
 
 	registry := NewTypeRegistry() // Create a new type registry
 
 	// Iterate over all loaded packages
 	for _, pkg := range filteredPkgs {
-		fmt.Println(pkg)
+		//fmt.Println(pkg)
 		for _, file := range pkg.Syntax {
 			// Inspect the AST
 			for _, decl := range file.Decls {
-				fmt.Println(":::::---> ", decl)
+				//fmt.Println(":::::---> ", decl)
 				if genDecl, ok := decl.(*ast.GenDecl); ok && genDecl.Tok == token.TYPE {
 					for _, spec := range genDecl.Specs {
 						typeSpec := spec.(*ast.TypeSpec)
-						fmt.Println("----> ", typeSpec.Name.Name)
+						//fmt.Println("----> ", typeSpec.Name.Name)
 						if structType, ok := typeSpec.Type.(*ast.StructType); ok {
 							fmt.Println("-xx--> ", structType)
 							// Check for hookie.Inject tag
@@ -116,7 +111,7 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 
 // isInjectable checks if the struct has the hookie.Inject embedded type
 func isInjectable(structType *ast.StructType) bool {
-	log.Println("---> ")
+	//log.Println("---> ")
 	for _, field := range structType.Fields.List {
 		// Check if the field is a type
 		if field.Type != nil {
