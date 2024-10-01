@@ -7,11 +7,13 @@ import (
 	"go/token"
 	"go/types"
 	"golang.org/x/tools/go/packages"
+	"log"
 	"reflect"
 )
 
 // WatchAndInjectHooks finds structs with hookie.Inject and calls their hooks
 func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
+	log.Println("watching hooks")
 	// Load packages from the specified directory
 	cfg := &packages.Config{
 		Dir:  rootDir,
@@ -22,6 +24,7 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	log.Println("packages:", _packages)
 
 	// Iterate over all loaded packages
 	for _, pkg := range _packages {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/DeimosTech/hookie/instance"
+	"log"
 	"reflect"
 	"sync"
 )
@@ -13,6 +14,7 @@ var auditLogModels sync.Map
 
 // Step 2: Automatic detection of models that embed BaseModel or have in.In fields
 func init() {
+	log.Println("init called")
 	err := WatchAndInjectHooks(".", context.Background())
 	if err != nil {
 		panic(err)
