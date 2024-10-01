@@ -37,7 +37,7 @@ func (tr *TypeRegistry) Lookup(pkgPath, typeName string) (reflect.Type, bool) {
 // WatchAndInjectHooks finds structs with hookie.Inject and calls their hooks
 func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 	// Load all packages from the specified directory and its subdirectories
-	goDirs, err := getGoPackages("/internal")
+	goDirs, err := getGoPackages("internal/")
 	if err != nil {
 		panic(err)
 	}
