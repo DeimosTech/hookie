@@ -55,7 +55,9 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 				if genDecl, ok := decl.(*ast.GenDecl); ok && genDecl.Tok == token.TYPE {
 					for _, spec := range genDecl.Specs {
 						typeSpec := spec.(*ast.TypeSpec)
+						//fmt.Println("----> ", typeSpec.Name.Name)
 						if structType, ok := typeSpec.Type.(*ast.StructType); ok {
+							fmt.Println("-xx--> ", structType)
 							// Check for hookie.Inject tag
 							if isInjectable(structType) {
 								structName := typeSpec.Name.Name
@@ -101,6 +103,7 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 
 // isInjectable checks if the struct has the hookie.Inject embedded type
 func isInjectable(structType *ast.StructType) bool {
+	log.Println("---> ")
 	for _, field := range structType.Fields.List {
 		// Check if the field is a type
 		if field.Type != nil {
