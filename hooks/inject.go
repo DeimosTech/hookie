@@ -10,7 +10,6 @@ import (
 )
 
 type DefaultHooks struct {
-	mgo *mongo.Mongo
 }
 
 func (h *DefaultHooks) BeforeInsert(model interface{}) {
