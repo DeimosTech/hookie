@@ -36,8 +36,7 @@ func (tr *TypeRegistry) Lookup(pkgPath, typeName string) (reflect.Type, bool) {
 }
 
 // WatchAndInjectHooks finds structs with hookie.Inject and calls their hooks
-func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
-	// Load all packages from the specified directory and its subdirectories
+func WatchAndInjectHooks(ctx context.Context, rootDir string) error {
 	goDirs, err := collectGoDirs("./")
 	if err != nil {
 		log.Fatalf("Error collecting Go directories: %v", err)
@@ -46,11 +45,9 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 	if err != nil {
 		log.Fatalf("Error getting Go module name: %v", err)
 	}
-	// Convert the list of directories into a pattern for packages.Load
-	//dirPatterns := make([]string, len(goDirs))
 	for _, dir := range goDirs {
 		path := filepath.Join(moduleName, dir)
-		err = WatchAndRegister(path, ctx)
+		err = WatchAndRegister(ctx, path)
 		if err != nil {
 			log.Println(err)
 		}
@@ -59,10 +56,10 @@ func WatchAndInjectHooks(rootDir string, ctx context.Context) error {
 }
 
 // WatchAndRegister finds structs with hookie.Inject and calls their hooks
-func WatchAndRegister(dir string, ctx context.Context) error {
+func WatchAndRegister(ctx context.Context, dir string) error {
 	_log := slog.Default()
 	cfg := &packages.Config{
-		Mode: packages.NeedSyntax | packages.NeedTypes | packages.NeedImports, // Avoid NeedDeps if unnecessary
+		Mode: packages.NeedSyntax | packages.NeedTypes | packages.NeedImports,
 	}
 
 	// Handle the panic gracefully
@@ -72,7 +69,7 @@ func WatchAndRegister(dir string, ctx context.Context) error {
 		}
 	}()
 
-	_packages, err := packages.Load(cfg, "gitlab.com/shikho/backend/mask/"+dir)
+	_packages, err := packages.Load(cfg, dir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -83,17 +80,13 @@ func WatchAndRegister(dir string, ctx context.Context) error {
 		for _, file := range pkg.Syntax {
 			// Inspect the AST
 			for _, decl := range file.Decls {
-				//fmt.Println(":::::---> ", decl)
 				if genDecl, ok := decl.(*ast.GenDecl); ok && genDecl.Tok == token.TYPE {
 					for _, spec := range genDecl.Specs {
 						typeSpec := spec.(*ast.TypeSpec)
-						fmt.Println("----> ", typeSpec.Name.Name)
 						if structType, ok := typeSpec.Type.(*ast.StructType); ok {
-							fmt.Println("-xx--> ", structType)
-							// Check for hookie.Inject tag
 							if isInjectable(structType) {
 								structName := typeSpec.Name.Name
-								_log.Info("Found injectable struct: %s in package: %s\n", structName, pkg.PkgPath)
+								_log.Info(fmt.Sprintf("Found injectable struct: %s in package: %s", structName, pkg.PkgPath))
 
 								// Get the full type from the types package
 								obj := pkg.Types.Scope().Lookup(structName)
@@ -104,7 +97,7 @@ func WatchAndRegister(dir string, ctx context.Context) error {
 								// Ensure the object is of type *types.Named
 								if t, ok := obj.Type().(*types.Named); ok && t != nil {
 									// Register the type in the registry
-									registry.Register(pkg.PkgPath, structName, reflect.TypeOf(struct{}{})) // Create a dummy instance to get reflect.Type
+									registry.Register(pkg.PkgPath, structName, reflect.TypeOf(struct{}{}))
 
 									// Get the underlying type
 									underlyingType := t.Underlying()
@@ -146,7 +139,7 @@ func isInjectable(structType *ast.StructType) bool {
 			}
 		}
 
-		// Handle non-qualified names (for example, just Inject)
+		// Handle qualified names (for example, just Inject)
 		if typeIdent, ok := field.Type.(*ast.Ident); ok {
 			if typeIdent.Name == "Inject" {
 				return true
@@ -162,7 +155,7 @@ func isInjectable(structType *ast.StructType) bool {
 			// If it's a pointer to a qualified type (e.g., *instance.Inject)
 			if selExpr, ok := typeSpec.X.(*ast.SelectorExpr); ok {
 				pkgIdent, ok := selExpr.X.(*ast.Ident)
-				if ok && pkgIdent.Name == "instance" && selExpr.Sel.Name == "Inject" {
+				if ok && pkgIdent.Name == "in" && selExpr.Sel.Name == "Inject" {
 					return true
 				}
 			}
@@ -173,16 +166,11 @@ func isInjectable(structType *ast.StructType) bool {
 
 func collectGoDirs(baseDir string) ([]string, error) {
 	var goDirs []string
-
-	// Walk through the base directory recursively
 	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-
-		// Check if the current path is a directory
 		if info.IsDir() {
-			// Check if the directory contains Go files
 			if hasGoFiles(path) && !isExclude(path) {
 				goDirs = append(goDirs, path)
 			}
@@ -223,11 +211,9 @@ func getGoModuleName(dir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("could not read go.mod file: %v", err)
 	}
-	// Parse the go.mod file
 	modFile, err := modfile.Parse("go.mod", data, nil)
 	if err != nil {
 		return "", fmt.Errorf("could not parse go.mod file: %v", err)
 	}
-	// Return the module name
 	return modFile.Module.Mod.Path, nil
 }

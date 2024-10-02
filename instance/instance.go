@@ -1,4 +1,4 @@
-package instance
+package in
 
 // Hook interface for custom hooks
 type Hook interface {
