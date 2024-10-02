@@ -21,6 +21,15 @@ type Mongo struct {
 	Logger       *slog.Logger
 }
 
+var instance *Mongo
+
+func SetDbConnection(in *Mongo) {
+	instance = in
+}
+func GetDbConnection() *Mongo {
+	return instance
+}
+
 func (d *Mongo) Ping(ctx context.Context) error {
 	return d.Client.Ping(ctx, readpref.Primary())
 }

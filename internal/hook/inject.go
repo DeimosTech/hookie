@@ -38,6 +38,9 @@ func DefaultAfterInsert(model interface{}) {
 		model.(in.Hook).AfterInsert()
 		return
 	}
+	if isAuditLogEnabled(model) {
+
+	}
 	fmt.Println("Default AfterInsert hook called")
 }
 
