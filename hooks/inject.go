@@ -38,9 +38,24 @@ func (h *DefaultHooks) AfterInsert(model interface{}) {
 
 // isAuditLogEnabled Function to check if the model has audit logging enabled
 func isAuditLogEnabled(model interface{}) bool {
-	modelType := reflect.TypeOf(model).Elem() // Get the model type
-	_, exists := hook.AuditLogModels.Load(modelType)
-	return exists
+	modelType := reflect.TypeOf(model)
+
+	// If the modelType is a pointer, get the underlying type
+	if modelType.Kind() == reflect.Ptr {
+		modelType = modelType.Elem()
+	}
+
+	// Ensure it's a struct
+	if modelType.Kind() != reflect.Struct {
+		return false
+	}
+
+	// Get the type's name
+	typeName := modelType.Name()
+
+	// Get the package path using the types package
+	pkgPath := modelType.PkgPath()
+	return hook.AuditLogModels[pkgPath+typeName]
 }
 
 // hasBeforeInsertHook Check if the model has a BeforeInsert method (custom user hook)

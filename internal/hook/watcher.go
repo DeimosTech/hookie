@@ -12,28 +12,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 )
-
-type TypeRegistry struct {
-	types map[string]reflect.Type // Key: "packagePath.typeName"
-}
-
-func NewTypeRegistry() *TypeRegistry {
-	return &TypeRegistry{types: make(map[string]reflect.Type)}
-}
-
-func (tr *TypeRegistry) Register(pkgPath, typeName string, typ reflect.Type) {
-	key := fmt.Sprintf("%s.%s", pkgPath, typeName)
-	tr.types[key] = typ
-}
-
-func (tr *TypeRegistry) Lookup(pkgPath, typeName string) (reflect.Type, bool) {
-	key := fmt.Sprintf("%s.%s", pkgPath, typeName)
-	typ, exists := tr.types[key]
-	return typ, exists
-}
 
 // WatchAndInjectHooks finds structs with hookie.Inject and calls their hooks
 func WatchAndInjectHooks(ctx context.Context, rootDir string) error {
@@ -74,8 +54,6 @@ func WatchAndRegister(ctx context.Context, dir string) error {
 		log.Fatal(err)
 	}
 
-	registry := NewTypeRegistry()
-
 	for _, pkg := range _packages {
 		for _, file := range pkg.Syntax {
 			// Inspect the AST
@@ -96,25 +74,7 @@ func WatchAndRegister(ctx context.Context, dir string) error {
 
 								// Ensure the object is of type *types.Named
 								if t, ok := obj.Type().(*types.Named); ok && t != nil {
-									// Register the type in the registry
-									registry.Register(pkg.PkgPath, structName, reflect.TypeOf(struct{}{}))
-
-									// Get the underlying type
-									underlyingType := t.Underlying()
-									_, ok := underlyingType.(*types.Struct)
-									if !ok {
-										return fmt.Errorf("%s is not a struct type", structName)
-									}
-
-									// Now look up the type from the registry
-									reflectType, exists := registry.Lookup(pkg.PkgPath, structName)
-									if !exists {
-										return fmt.Errorf("reflect type for %s not found in registry", structName)
-									}
-
-									// Use reflection to create a new instance of the struct
-									instance := reflect.New(reflectType).Interface()
-									RegisterModel(instance)
+									RegisterModel(pkg.ID + structName)
 								}
 							}
 						}
