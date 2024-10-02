@@ -133,7 +133,7 @@ func isInjectable(structType *ast.StructType) bool {
 		// Check if the field is a type
 		if selExpr, ok := field.Type.(*ast.SelectorExpr); ok {
 			pkgIdent, ok := selExpr.X.(*ast.Ident)
-			if ok && pkgIdent.Name == "instance" && selExpr.Sel.Name == "Inject" {
+			if ok && pkgIdent.Name == "in" && selExpr.Sel.Name == "Inject" {
 				// Found a field of type instance.Inject
 				return true
 			}
