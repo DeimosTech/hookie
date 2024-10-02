@@ -28,15 +28,15 @@ func DefaultBeforeInsert(model interface{}) {
 	// Trigger BeforeInsert hook if defined by user, else run default
 	if hasBeforeInsertHook(model) {
 		model.(in.Hook).BeforeInsert()
+		return
 	}
-	if isAuditLogEnabled(model) {
-		saveAuditLog(model)
-	}
+	fmt.Println("Default BeforeInsert hook called")
 }
 
 func DefaultAfterInsert(model interface{}) {
 	if hasAfterInsertHook(model) {
 		model.(in.Hook).AfterInsert()
+		return
 	}
 	fmt.Println("Default AfterInsert hook called")
 }
