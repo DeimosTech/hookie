@@ -1,4 +1,4 @@
-package hookie
+package main
 
 import (
 	"github.com/DeimosTech/hookie/db/mongo"
@@ -12,3 +12,5 @@ func init() {
 	}
 	slog.Default().Info("hookiee in action")
 }
+
+func main() {}

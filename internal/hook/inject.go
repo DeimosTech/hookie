@@ -25,18 +25,22 @@ func RegisterModel(model interface{}) {
 	auditLogModels.Store(modelType, true)
 }
 
-func DefaultBeforeInsert(model interface{}) {
+type DefaultHooks struct {
+	mgo *mongo.Mongo
+}
+
+func (h *DefaultHooks) BeforeInsert(model interface{}) {
 	// Trigger BeforeInsert hook if defined by user, else run default
 	if hasBeforeInsertHook(model) {
-		model.(in.Hook).BeforeInsert()
+		model.(in.Hook).BeforeInsert(model)
 		return
 	}
 	fmt.Println("Default BeforeInsert hook called")
 }
 
-func DefaultAfterInsert(model interface{}) {
+func (h *DefaultHooks) AfterInsert(model interface{}) {
 	if hasAfterInsertHook(model) {
-		model.(in.Hook).AfterInsert()
+		model.(in.Hook).AfterInsert(model)
 		return
 	}
 	if isAuditLogEnabled(model) {

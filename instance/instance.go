@@ -2,8 +2,8 @@ package in
 
 // Hook interface for custom hooks
 type Hook interface {
-	BeforeInsert()
-	AfterInsert()
+	BeforeInsert(model interface{})
+	AfterInsert(model interface{})
 }
 
 type Inject struct {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	db2 "github.com/DeimosTech/hookie/db"
-	"github.com/DeimosTech/hookie/internal/hook"
+	"github.com/DeimosTech/hookie/db"
+	in "github.com/DeimosTech/hookie/instance"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -18,15 +18,17 @@ type Mongo struct {
 	*mongo.Client
 	Database *mongo.Database
 	Logger   *slog.Logger
+	hook     in.Hook
 }
 
 var instance *Mongo
 
-func InitMongo(cl *mongo.Client, dbName string) *Mongo {
+func InitMongo(cl *mongo.Client, dbName string, hook in.Hook) *Mongo {
 	instance = &Mongo{
 		Client:   cl,
 		Database: cl.Database(dbName),
 		Logger:   slog.Default(),
+		hook:     hook,
 	}
 	return instance
 }
@@ -43,7 +45,7 @@ func (d *Mongo) Disconnect(ctx context.Context) error {
 }
 
 // EnsureIndices creates indices for collection col
-func (d *Mongo) EnsureIndices(ctx context.Context, col string, index []db2.Index) error {
+func (d *Mongo) EnsureIndices(ctx context.Context, col string, index []db.Index) error {
 	_db := d.Database
 	var indexModels []mongo.IndexModel
 	for _, ind := range index {
@@ -77,7 +79,7 @@ func (d *Mongo) EnsureIndices(ctx context.Context, col string, index []db2.Index
 }
 
 // DropIndices drops indices from collection col
-func (d *Mongo) DropIndices(ctx context.Context, col string, index []db2.Index) error {
+func (d *Mongo) DropIndices(ctx context.Context, col string, index []db.Index) error {
 	if _, err := d.Database.Collection(col).Indexes().DropAll(ctx); err != nil {
 		return err
 	}
@@ -86,12 +88,12 @@ func (d *Mongo) DropIndices(ctx context.Context, col string, index []db2.Index) 
 
 // Insert inserts doc into collection
 func (d *Mongo) Insert(ctx context.Context, col string, doc interface{}) error {
-	hook.DefaultBeforeInsert(doc)
+	d.hook.BeforeInsert(doc)
 	if _, err := d.Database.Collection(col).InsertOne(ctx, doc); err != nil {
 
 		return err
 	}
-	hook.DefaultAfterInsert(doc)
+	d.hook.AfterInsert(doc)
 	return nil
 }
 
@@ -112,7 +114,7 @@ func (d *Mongo) FindOne(ctx context.Context, col string, q interface{}, v interf
 	err := d.Database.Collection(col).FindOne(ctx, q, findOneOpts).Decode(v)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return db2.ErrNotFound
+			return db.ErrNotFound
 		}
 		return err
 	}
@@ -180,7 +182,7 @@ func (d *Mongo) PartialUpdateMany(ctx context.Context, col string, filter interf
 	return nil
 }
 
-func (d *Mongo) PartialUpdateManyByQuery(ctx context.Context, col string, filter interface{}, query db2.UnorderedDbQuery) error {
+func (d *Mongo) PartialUpdateManyByQuery(ctx context.Context, col string, filter interface{}, query db.UnorderedDbQuery) error {
 	_, err := d.Database.Collection(col).UpdateMany(ctx, filter, query)
 	if err != nil {
 		return err
@@ -202,7 +204,7 @@ func (d *Mongo) Count(ctx context.Context, col string, q interface{}) (int64, er
 	cnt, err := d.Database.Collection(col).CountDocuments(ctx, q)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return 0, db2.ErrNotFound
+			return 0, db.ErrNotFound
 		}
 		return 0, err
 	}
