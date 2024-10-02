@@ -3,6 +3,7 @@ package hook
 import (
 	"context"
 	"fmt"
+	"github.com/DeimosTech/hookie/db/mongo"
 	in "github.com/DeimosTech/hookie/instance"
 	"reflect"
 	"sync"
@@ -39,7 +40,11 @@ func DefaultAfterInsert(model interface{}) {
 		return
 	}
 	if isAuditLogEnabled(model) {
-
+		db := mongo.GetDbConnection()
+		_, err := db.Database.Collection("audit_logs").InsertOne(context.Background(), model)
+		if err != nil {
+			db.Logger.Error(err.Error())
+		}
 	}
 	fmt.Println("Default AfterInsert hook called")
 }

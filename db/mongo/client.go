@@ -16,15 +16,19 @@ import (
 // Mongo holds necessary fields and mongo Database session to connect
 type Mongo struct {
 	*mongo.Client
-	Database     *mongo.Database
-	DatabaseName string
-	Logger       *slog.Logger
+	Database *mongo.Database
+	Logger   *slog.Logger
 }
 
 var instance *Mongo
 
-func SetDbConnection(in *Mongo) {
-	instance = in
+func InitMongo(cl *mongo.Client, dbName string) *Mongo {
+	instance = &Mongo{
+		Client:   cl,
+		Database: cl.Database(dbName),
+		Logger:   slog.Default(),
+	}
+	return instance
 }
 func GetDbConnection() *Mongo {
 	return instance
