@@ -48,16 +48,17 @@ func (h *DefaultHooks) PostSave(ctx context.Context, model interface{}, filter i
 				h.l.Error(err.Error())
 				return
 			}
+
 			auditLogMeta := in.AuditLogMeta{
 				Id:                   primitive.NewObjectID(),
-				AuditEvent:           ops,                      // Insert, Update, etc.
-				AuditURL:             "example.com",            // Populate based on your logic
-				AuditIPAddress:       "127.0.0.1",              // This can come from your request metadata
-				AuditUserAgent:       "Mozilla/5.0",            // Populate from request metadata
-				AuditTags:            []string{"audit", "log"}, // Customize tags
+				AuditEvent:           ops,                              // Insert, Update, etc.
+				AuditURL:             "example.com",                    // Populate based on your logic
+				AuditIPAddress:       ctx.Value("is_address").(string), // This can come from your request metadata
+				AuditUserAgent:       ctx.Value("user_agent").(string), // Populate from request metadata
+				AuditTags:            []string{"audit", "log"},         // Customize tags
 				AuditCreatedAt:       &currentTime,
-				UserID:               "user_id",   // Set current user ID
-				UserType:             "user_type", // Set current user type
+				UserID:               ctx.Value("user_id").(string), // Set current user ID
+				UserType:             "unknown",                     // Set current user type
 				DocumentCurrentState: state,
 			}
 			_, err = db.Database.Collection("audit_logs_meta").InsertOne(context.Background(), auditLogMeta)
