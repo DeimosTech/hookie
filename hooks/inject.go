@@ -11,7 +11,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log/slog"
 	"reflect"
+	"regexp"
+	"strings"
 	"time"
+	"unicode"
 )
 
 type DefaultHooks struct {
@@ -145,12 +148,14 @@ func structToMap(obj interface{}) (map[string]interface{}, error) {
 		}
 
 		// Use JSON tag as the key if present; otherwise, fallback to BSON tag
-		if jsonTag != "" {
-			result[jsonTag] = value.Interface()
-		} else if bsonTag != "" {
-			result[bsonTag] = value.Interface()
+		if bsonTag != "" {
+			splitTag := strings.Split(bsonTag, ",")
+			result[splitTag[0]] = value.Interface()
+		} else if jsonTag != "" {
+			splitTag := strings.Split(jsonTag, ",")
+			result[splitTag[0]] = value.Interface()
 		} else {
-			result[field.Name] = value.Interface()
+			result[convertToSnakeCase(field.Name)] = value.Interface()
 		}
 	}
 
@@ -171,4 +176,24 @@ func isOmitEmpty(value reflect.Value) bool {
 		zero := reflect.Zero(value.Type())
 		return value.Interface() == zero.Interface()
 	}
+}
+
+func convertToSnakeCase(str string) string {
+	var snakeCase string
+	// Handle the acronym cases like 'ID' and 'URL' if needed
+	acronymRegex := regexp.MustCompile(`([A-Z]+)([A-Z][a-z])`)
+	str = acronymRegex.ReplaceAllString(str, "${1}_${2}")
+
+	// Convert the remaining camel case
+	for i, v := range str {
+		if unicode.IsUpper(v) {
+			if i > 0 {
+				snakeCase += "_"
+			}
+			snakeCase += string(unicode.ToLower(v))
+		} else {
+			snakeCase += string(v)
+		}
+	}
+	return snakeCase
 }
