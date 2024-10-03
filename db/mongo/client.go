@@ -7,6 +7,7 @@ import (
 	"github.com/DeimosTech/hookie/db"
 	in "github.com/DeimosTech/hookie/instance"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -96,7 +97,7 @@ func (d *Mongo) Insert(ctx context.Context, col string, doc interface{}) error {
 	if insRes, err = d.Database.Collection(col).InsertOne(ctx, doc); err != nil {
 		return err
 	}
-	d.hook.PostSave(ctx, doc, nil, col, "insert", insRes.InsertedID.(string))
+	d.hook.PostSave(ctx, doc, nil, col, "insert", insRes.InsertedID.(primitive.ObjectID).Hex())
 	return nil
 }
 
@@ -226,6 +227,6 @@ func (d *Mongo) Update(ctx context.Context, col string, filter interface{}, data
 	if uRes, err = d.Database.Collection(col).UpdateOne(ctx, filter, update); err != nil {
 		return err
 	}
-	d.hook.PostSave(ctx, data, filter, col, "update", uRes.UpsertedID.(string))
+	d.hook.PostSave(ctx, data, filter, col, "update", uRes.UpsertedID.(primitive.ObjectID).Hex())
 	return nil
 }
