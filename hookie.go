@@ -11,5 +11,5 @@ func init() {
 
 //func main() {
 //	defaultHooks := &hooks.DefaultHooks{}
-//	defaultHooks.AfterInsert(in.Test{})
+//	defaultHooks.PostSave(in.Test{})
 //}

@@ -88,12 +88,15 @@ func (d *Mongo) DropIndices(ctx context.Context, col string, index []db.Index) e
 
 // Insert inserts doc into collection
 func (d *Mongo) Insert(ctx context.Context, col string, doc interface{}) error {
-	d.hook.BeforeInsert(doc)
-	if _, err := d.Database.Collection(col).InsertOne(ctx, doc); err != nil {
-
+	var (
+		err    error
+		insRes *mongo.InsertOneResult
+	)
+	d.hook.PreSave(ctx, doc, nil, col, "insert", "")
+	if insRes, err = d.Database.Collection(col).InsertOne(ctx, doc); err != nil {
 		return err
 	}
-	d.hook.AfterInsert(doc)
+	d.hook.PostSave(ctx, doc, nil, col, "insert", insRes.InsertedID.(string))
 	return nil
 }
 
@@ -212,9 +215,17 @@ func (d *Mongo) Count(ctx context.Context, col string, q interface{}) (int64, er
 }
 
 func (d *Mongo) Update(ctx context.Context, col string, filter interface{}, data interface{}) error {
+	var (
+		err  error
+		uRes *mongo.UpdateResult
+	)
 	update := bson.M{
 		"$set": data,
 	}
-	_, err := d.Database.Collection(col).UpdateOne(ctx, filter, update)
-	return err
+	d.hook.PreSave(ctx, data, filter, col, "update", "")
+	if uRes, err = d.Database.Collection(col).UpdateOne(ctx, filter, update); err != nil {
+		return err
+	}
+	d.hook.PostSave(ctx, data, filter, col, "update", uRes.UpsertedID.(string))
+	return nil
 }
