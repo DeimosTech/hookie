@@ -135,12 +135,20 @@ func structToMap(obj interface{}) (map[string]interface{}, error) {
 		field := v.Type().Field(i)
 		value := v.Field(i)
 
-		// You can also handle the JSON tag here if needed
+		// Get the JSON and BSON tags
 		jsonTag := field.Tag.Get("json")
+		bsonTag := field.Tag.Get("bson")
 
-		// If the JSON tag is present, use it as the key
+		// Check if the field should be omitted
+		if jsonTag != "" && jsonTag[len(jsonTag)-len(",omitempty"):] == ",omitempty" && value.IsNil() {
+			continue // Skip adding this field if it's nil
+		}
+
+		// Use JSON tag as the key if present; otherwise, fallback to BSON tag
 		if jsonTag != "" {
 			result[jsonTag] = value.Interface()
+		} else if bsonTag != "" {
+			result[bsonTag] = value.Interface()
 		} else {
 			result[field.Name] = value.Interface()
 		}
