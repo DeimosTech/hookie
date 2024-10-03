@@ -140,8 +140,8 @@ func structToMap(obj interface{}) (map[string]interface{}, error) {
 		bsonTag := field.Tag.Get("bson")
 
 		// Check if the field should be omitted
-		if jsonTag != "" && jsonTag[len(jsonTag)-len(",omitempty"):] == ",omitempty" && value.IsNil() {
-			continue // Skip adding this field if it's nil
+		if isOmitEmpty(value) {
+			continue // Skip adding this field if it's empty
 		}
 
 		// Use JSON tag as the key if present; otherwise, fallback to BSON tag
@@ -155,4 +155,20 @@ func structToMap(obj interface{}) (map[string]interface{}, error) {
 	}
 
 	return result, nil
+}
+
+// isOmitEmpty checks if a value is considered "empty" according to the omitempty rule
+func isOmitEmpty(value reflect.Value) bool {
+	switch value.Kind() {
+	case reflect.Ptr:
+		return value.IsNil() // Nil pointer is considered empty
+	case reflect.Slice, reflect.Array:
+		return value.Len() == 0 // Empty slice/array is considered empty
+	case reflect.Map:
+		return value.IsNil() || value.Len() == 0 // Nil or empty map is considered empty
+	default:
+		// For all other types, zero value is considered empty
+		zero := reflect.Zero(value.Type())
+		return value.Interface() == zero.Interface()
+	}
 }
