@@ -150,6 +150,10 @@ func structToMap(obj interface{}) (map[string]interface{}, error) {
 		// Use JSON tag as the key if present; otherwise, fallback to BSON tag
 		if bsonTag != "" {
 			splitTag := strings.Split(bsonTag, ",")
+			if splitTag[0] == "_id" {
+				objectID := value.Interface().(primitive.ObjectID)
+				result[splitTag[0]] = objectID.Hex()
+			}
 			result[splitTag[0]] = value.Interface()
 		} else if jsonTag != "" {
 			splitTag := strings.Split(jsonTag, ",")
