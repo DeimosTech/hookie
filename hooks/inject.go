@@ -53,7 +53,7 @@ func (h *DefaultHooks) PostSave(ctx context.Context, model interface{}, filter i
 				Id:                   primitive.NewObjectID(),
 				AuditEvent:           ops,                              // Insert, Update, etc.
 				AuditURL:             "example.com",                    // Populate based on your logic
-				AuditIPAddress:       ctx.Value("is_address").(string), // This can come from your request metadata
+				AuditIPAddress:       ctx.Value("ip_address").(string), // This can come from your request metadata
 				AuditUserAgent:       ctx.Value("user_agent").(string), // Populate from request metadata
 				AuditTags:            []string{"audit", "log"},         // Customize tags
 				AuditCreatedAt:       &currentTime,
