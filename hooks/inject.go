@@ -177,6 +177,7 @@ func structToMap(obj interface{}) (map[string]interface{}, error) {
 			if splitTag[0] == "_id" {
 				objectID := value.Interface().(primitive.ObjectID)
 				result[splitTag[0]] = objectID.Hex()
+				continue
 			}
 			result[splitTag[0]] = value.Interface()
 		} else if jsonTag != "" {
