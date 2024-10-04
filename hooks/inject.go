@@ -42,7 +42,6 @@ func (h *DefaultHooks) PostSave(ctx context.Context, model interface{}, filter i
 	if isAuditLogEnabled(model) {
 		db := mongo.GetDbConnection()
 		if ops == "insert" {
-			currentTime := time.Now()
 			state, err := structToMap(model)
 			if err != nil {
 				h.l.Error(err.Error())
@@ -51,14 +50,6 @@ func (h *DefaultHooks) PostSave(ctx context.Context, model interface{}, filter i
 
 			auditLogMeta := in.AuditLogMeta{
 				Id:                   primitive.NewObjectID(),
-				AuditEvent:           ops,                              // Insert, Update, etc.
-				AuditURL:             "example.com",                    // Populate based on your logic
-				AuditIPAddress:       ctx.Value("ip_addr").(string),    // This can come from your request metadata
-				AuditUserAgent:       ctx.Value("user_agent").(string), // Populate from request metadata
-				AuditTags:            []string{"audit", "log"},         // Customize tags
-				AuditCreatedAt:       &currentTime,
-				UserID:               ctx.Value("user_id").(string), // Set current user ID
-				UserType:             "unknown",                     // Set current user type
 				DocumentCurrentState: state,
 			}
 			_, err = db.Database.Collection("audit_logs_meta").InsertOne(context.Background(), auditLogMeta)
@@ -81,14 +72,18 @@ func (h *DefaultHooks) PostSave(ctx context.Context, model interface{}, filter i
 				h.l.Error(err.Error())
 				return
 			}
+			currentTime := time.Now()
 			changeLog := compareDocumentStates(auditLogMeta.DocumentCurrentState, newDoc)
 			_, err = db.Database.Collection("audit_logs").InsertOne(context.Background(), in.AuditLog{
-				Id:          primitive.NewObjectID(),
-				AuditMetaId: auditLogMeta.Id.Hex(),
-				Events: in.AuditEvent{
-					EventType: "change",
-					Change:    changeLog,
-				},
+				Id:             primitive.NewObjectID(),
+				AuditURL:       "example.com",
+				AuditIPAddress: ctx.Value("ip_addr").(string),
+				AuditUserAgent: ctx.Value("user_agent").(string),
+				AuditTags:      []string{"audit", "log"},
+				AuditCreatedAt: &currentTime,
+				UserID:         ctx.Value("user_id").(string),
+				UserType:       "unknown",
+				Change:         changeLog,
 			})
 			if err != nil {
 				h.l.Error(err.Error())
