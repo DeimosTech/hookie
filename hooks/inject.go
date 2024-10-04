@@ -229,6 +229,9 @@ func compareDocumentStates(oldDoc, newDoc map[string]interface{}) map[string]in.
 	changes := make(map[string]in.AuditChange)
 
 	for key, newVal := range newDoc {
+		if key == "_id" {
+			continue
+		}
 		oldVal, exists := oldDoc[key]
 		if !exists || oldVal != newVal {
 			changes[key] = in.AuditChange{
