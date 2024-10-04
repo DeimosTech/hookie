@@ -229,7 +229,7 @@ func (d *Mongo) Update(ctx context.Context, col string, filter interface{}, data
 		return err
 	}
 	if id, ok := res["_id"].(primitive.ObjectID); ok {
-		d.hook.PostSave(ctx, data, filter, col, id.Hex(), "update")
+		d.hook.PostSave(ctx, data, filter, col, "update", id.Hex())
 	}
 	return nil
 }
