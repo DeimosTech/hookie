@@ -76,6 +76,29 @@ func (h *DefaultHooks) PostSave(ctx context.Context, model interface{}, filter i
 				h.l.Error(err.Error())
 				return
 			}
+			newDoc, err := structToMap(model)
+			if err != nil {
+				h.l.Error(err.Error())
+				return
+			}
+			changeLog := compareDocumentStates(auditLogMeta.DocumentCurrentState, newDoc)
+			_, err = db.Database.Collection("audit_logs").InsertOne(context.Background(), in.AuditLog{
+				Id:          primitive.NewObjectID(),
+				AuditMetaId: auditLogMeta.Id.Hex(),
+				Events: in.AuditEvent{
+					EventType: "change",
+					Change:    changeLog,
+				},
+			})
+			if err != nil {
+				h.l.Error(err.Error())
+				return
+			}
+			_, err = db.Database.Collection("audit_logs_meta").UpdateByID(context.Background(), auditLogMeta.Id, in.AuditLogMeta{DocumentCurrentState: auditLogMeta.DocumentCurrentState})
+			if err != nil {
+				h.l.Error(err.Error())
+				return
+			}
 		}
 	}
 	h.l.Info("default PostSave hook triggered")
@@ -201,4 +224,20 @@ func convertToSnakeCase(str string) string {
 		}
 	}
 	return snakeCase
+}
+
+func compareDocumentStates(oldDoc, newDoc map[string]interface{}) map[string]in.AuditChange {
+	changes := make(map[string]in.AuditChange)
+
+	for key, newVal := range newDoc {
+		oldVal, exists := oldDoc[key]
+		if !exists || oldVal != newVal {
+			changes[key] = in.AuditChange{
+				Old: fmt.Sprintf("%v", oldVal),
+				New: fmt.Sprintf("%v", newVal),
+			}
+		}
+	}
+
+	return changes
 }

@@ -38,7 +38,7 @@ type AuditLogMeta struct {
 type AuditLog struct {
 	Id          primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	AuditMetaId string             `json:"audit_meta_id,omitempty" bson:"audit_meta_id,omitempty"`
-	Events      []AuditEvent       `json:"events,omitempty" bson:"events,omitempty"`
+	Events      AuditEvent         `json:"event,omitempty" bson:"event,omitempty"`
 }
 
 type AuditEvent struct {
