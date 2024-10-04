@@ -94,7 +94,10 @@ func (h *DefaultHooks) PostSave(ctx context.Context, model interface{}, filter i
 				h.l.Error(err.Error())
 				return
 			}
-			_, err = db.Database.Collection("audit_logs_meta").UpdateByID(context.Background(), auditLogMeta.Id, in.AuditLogMeta{DocumentCurrentState: auditLogMeta.DocumentCurrentState})
+			update := bson.M{
+				"$set": in.AuditLogMeta{DocumentCurrentState: auditLogMeta.DocumentCurrentState},
+			}
+			_, err = db.Database.Collection("audit_logs_meta").UpdateByID(context.Background(), auditLogMeta.Id, update)
 			if err != nil {
 				h.l.Error(err.Error())
 				return
