@@ -218,19 +218,18 @@ func (d *Mongo) Count(ctx context.Context, col string, q interface{}) (int64, er
 func (d *Mongo) Update(ctx context.Context, col string, filter interface{}, data interface{}) error {
 	var (
 		err  error
-		uRes *mongo.SingleResult
+		opts = options.FindOneAndUpdate().SetReturnDocument(options.After)
+		res  bson.M
 	)
 	update := bson.M{
 		"$set": data,
 	}
 	d.hook.PreSave(ctx, data, filter, col, "update", "")
-	if uRes = d.Database.Collection(col).FindOneAndUpdate(ctx, filter, update); uRes.Err() != nil {
-		return uRes.Err()
-	}
-	oo, err := uRes.Raw()
-	if err != nil {
+	if err = d.Database.Collection(col).FindOneAndUpdate(ctx, filter, update, opts).Decode(&res); err != nil {
 		return err
 	}
-	d.hook.PostSave(ctx, data, filter, col, oo.Lookup("_id").ObjectID().Hex(), "update")
+	if id, ok := res["_id"].(primitive.ObjectID); ok {
+		d.hook.PostSave(ctx, data, filter, col, id.Hex(), "update")
+	}
 	return nil
 }
